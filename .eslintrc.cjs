@@ -2,7 +2,7 @@ module.exports = {
   root: true,
   extends: '@hovey/eslint-config-vue',
 
-  rules:{
-    "import/named":"off"
-  }
+  rules: {
+    'import/named': 'off',
+  },
 }
