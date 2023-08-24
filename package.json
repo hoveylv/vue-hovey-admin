@@ -1,0 +1,27 @@
+{
+  "name": "vue-hovey-admin",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.3.4"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.26.2",
+    "@hovey/eslint-config-vue": "^2.0.0",
+    "@hovey/stylelint-config-basic": "^2.0.0",
+    "@vitejs/plugin-vue": "^4.2.3",
+    "eslint": "^8.47.0",
+    "postcss": "^8.4.28",
+    "prettier": "^3.0.2",
+    "stylelint": "^15.10.3",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5",
+    "vue-tsc": "^1.8.5"
+  }
+}
