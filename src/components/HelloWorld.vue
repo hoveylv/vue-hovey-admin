@@ -9,6 +9,17 @@ const count = ref(0)
 <template>
   <h1>{{ msg }}</h1>
 
+  <el-button type="success"><i-ep-SuccessFilled />Success</el-button>
+  <el-button type="info"><i-ep-InfoFilled />Info</el-button>
+  <el-button type="warning"><i-ep-WarningFilled />Warning</el-button>
+  <el-button type="danger"><i-ep-WarnTriangleFilled />Danger</el-button>
+  <el-button type="primary"
+    ><svg-icon icon-class="close_left" class="text-emerald" />SVG</el-button
+  >
+  <el-button type="primary"
+    ><svg-icon icon-class="close_right" class="text-fuchsia" />SVG</el-button
+  >
+
   <div class="card">
     <button type="button" @click="count++">count is {{ count }}</button>
     <p>
@@ -31,8 +42,12 @@ const count = ref(0)
   <p class="read-the-docs">Click on the Vite and Vue logos to learn more</p>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .read-the-docs {
-  color: #888;
+  color: $xtxColor;
+}
+
+.card {
+  background-color: $xtxColor;
 }
 </style>
