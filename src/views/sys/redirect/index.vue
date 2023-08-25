@@ -1,5 +1,5 @@
 <script setup lang="ts"></script>
 
 <template>
-  <div>Layout</div>
+  <div>Redirect => index.vue</div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts"></script>
 
 <template>
-  <div>Login.vue</div>
+  <div>Error => index.vue</div>
 </template>

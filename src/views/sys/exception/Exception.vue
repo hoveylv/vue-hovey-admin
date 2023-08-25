@@ -1,5 +1,5 @@
 <script setup lang="ts"></script>
 
 <template>
-  <div>Iframe.vue</div>
+  <div>Exception.vue</div>
 </template>
