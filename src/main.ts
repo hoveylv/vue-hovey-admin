@@ -7,9 +7,13 @@ import { setupRouter } from '@/router'
 import { setupStore } from '@/store'
 import { setupI18n } from '@/locales'
 
-const app = createApp(App)
-setupStore(app)
-setupRouter(app)
-setupI18n(app)
+async function bootstap() {
+  const app = createApp(App)
+  setupStore(app)
 
-app.mount('#app')
+  setupRouter(app)
+  await setupI18n(app)
+  app.mount('#app')
+}
+
+bootstap()
