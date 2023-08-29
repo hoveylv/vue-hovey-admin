@@ -4,7 +4,6 @@ import type { LocaleType } from '@/types/config'
 import { changeLocale } from '@/locales'
 
 const appStore = useAppStore()
-
 async function handleLanguageChange(lang: LocaleType) {
   await changeLocale(lang)
 }

@@ -35,22 +35,22 @@ export default ({ mode }: ConfigEnv): UserConfig => {
         },
       },
     },
-    // server: {
-    //   host: '0.0.0.0',
-    //   port: Number(env.VITE_APP_PORT),
-    //   open: true,
-    //   proxy: {
-    //     [env.VITE_APP_BASE_API]: {
-    //       target: env.VITE_APP_TARGET_URL,
-    //       changeOrigin: true,
-    //       rewrite: (path) =>
-    //         path.replace(
-    //           new RegExp(`^${env.VITE_APP_BASE_API}`),
-    //           env.VITE_APP_TARGET_BASE_API
-    //         ),
-    //     },
-    //   },
-    // },
+    server: {
+      host: '0.0.0.0',
+      port: Number(env.VITE_APP_PORT),
+      open: true,
+      proxy: {
+        [env.VITE_APP_BASE_API]: {
+          target: env.VITE_APP_TARGET_URL,
+          changeOrigin: true,
+          rewrite: (path) =>
+            path.replace(
+              new RegExp(`^${env.VITE_APP_BASE_API}`),
+              env.VITE_APP_TARGET_BASE_API
+            ),
+        },
+      },
+    },
     plugins: [
       vue(),
       UnoCSS({}),
@@ -99,7 +99,7 @@ export default ({ mode }: ConfigEnv): UserConfig => {
       VueI18n({
         runtimeOnly: true,
         compositionOnly: true,
-        fullInstall: true,
+        fullInstall: false,
         include: [resolve(__dirname, 'src/locales/langs/**')],
       }),
     ],
