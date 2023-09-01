@@ -24,6 +24,7 @@ export const RootRoute: AppRouteRecordRaw = {
   meta: {
     title: 'Root',
   },
+  children: [...asyncRoutes],
 }
 
 export const LoginRoute: AppRouteRecordRaw = {
@@ -41,6 +42,7 @@ export const basicRoutes = [
   LoginRoute,
   RootRoute,
   ...mainOutRoutes,
+
   REDIRECT_ROUTE,
   PAGE_NOT_FOUND_ROUTE,
 ]

@@ -1,11 +1,11 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  VITE_APP_TITLE: string
-  VITE_APP_PORT: string
-  VITE_APP_BASE_API: string
-  VITE_APP_TARGET_URL: string
-  VITE_APP_TARGET_BASE_API: string
+  VITE_USE_MOCK: boolean
+  VITE_PUBLIC_PATH: string
+  VITE_GLOB_API_URL: string
+  VITE_GLOB_UPLOAD_URL: string
+  VITE_GLOB_API_URL_PREFIX: string
 }
 
 interface ImportMeta {

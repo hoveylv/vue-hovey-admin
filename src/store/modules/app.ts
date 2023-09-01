@@ -1,27 +1,17 @@
-import zhCN from 'element-plus/es/locale/lang/zh-cn'
-import enUS from 'element-plus/es/locale/lang/en'
-import type { Language } from 'element-plus/es/locale/index'
 import { store } from '..'
-import appConfig from '@/configs/appConfig'
-import type { LocaleType } from '@/types/config'
-
-const LOCALE = {
-  zh_CN: zhCN,
-  en: enUS,
-} as { [key: string]: Language }
+import type { AppSetting, LocaleType } from '@/types/config'
+import defaultSetting from '@/settings/appConfig'
 
 export const useAppStore = defineStore('app', () => {
-  const language = useStorage('language', appConfig.language)
+  const appSetting = useStorage<AppSetting>('appSettings', defaultSetting)
 
-  const locale = computed(() => {
-    return LOCALE[language.value] ?? LOCALE.zh_CN
-  })
-  const changeLanguage = (val: LocaleType) => {
-    language.value = val
+  const setLocale = (lang: LocaleType) => {
+    appSetting.value.language = lang
   }
-  return { locale, language, changeLanguage }
+
+  return { appSetting, setLocale }
 })
 
-export function useLocaleStoreWithOut() {
+export function useAppStoreWithOut() {
   return useAppStore(store)
 }

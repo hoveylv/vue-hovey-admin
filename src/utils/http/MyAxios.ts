@@ -1,263 +1,233 @@
 import type {
+  AxiosError,
   AxiosInstance,
   AxiosRequestConfig,
-  AxiosRequestHeaders,
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios'
 import axios from 'axios'
-
-export interface MyAxiosConfig extends AxiosRequestConfig {
-  enableRetry?: boolean
-  maxRetryAttempts?: number
-  retryInterval?: number
-  enableCancelDuplicate?: boolean
-  // 添加其他配置项...
-}
+import qs from 'qs'
+import { cloneDeep } from 'lodash-es'
+import { isFunction } from '../is'
+import type { CreateAxiosOptions } from './AxiosTransform'
+import { AxiosCanceler } from './AxiosCancel'
+import type { RequestOptions, Result, UploadFileParams } from '@/types/axios'
+import { ContentTypeEnum, RequestEnum } from '@/enums/httpEnum'
 
 export class MyAxios {
   private axiosInstance: AxiosInstance
-  private enableRetry: boolean
-  private maxRetryAttempts: number
-  private retryInterval: number
-  private enableCancelDuplicate: boolean
-  private abortControllers: Map<string, AbortController> = new Map()
-  private requestFilters: ((
-    config: InternalAxiosRequestConfig
-  ) => InternalAxiosRequestConfig)[] = []
+  private readonly options: CreateAxiosOptions
 
-  private responseFilters: ((response: AxiosResponse) => AxiosResponse)[] = []
-
-  constructor(config: Partial<MyAxiosConfig>) {
-    // 解构配置项
-    this.enableRetry =
-      config.enableRetry !== undefined ? config.enableRetry : true
-    this.maxRetryAttempts =
-      config.maxRetryAttempts !== undefined ? config.maxRetryAttempts : 3
-    this.retryInterval =
-      config.retryInterval !== undefined ? config.retryInterval : 1000
-    this.enableCancelDuplicate =
-      config.enableCancelDuplicate !== undefined
-        ? config.enableCancelDuplicate
-        : true
-
-    // 合并配置项，创建 Axios 实例
-    const mergedAxiosConfig: AxiosRequestConfig = {
-      ...config,
-      headers: {
-        ...(config.headers || {}),
-      },
-    }
-    this.axiosInstance = axios.create(mergedAxiosConfig)
-
-    // 设置取消重复请求的拦截器
-    if (this.enableCancelDuplicate) this.setupCancelDuplicateInterceptor()
+  constructor(options: CreateAxiosOptions) {
+    this.options = options
+    this.axiosInstance = axios.create(options)
+    this.setupInterceptors()
   }
 
-  // 设置取消重复请求的拦截器
-  private setupCancelDuplicateInterceptor() {
+  private createAxios(config: CreateAxiosOptions): void {
+    this.axiosInstance = axios.create(config)
+  }
+
+  private getTransform() {
+    const { transform } = this.options
+    return transform
+  }
+
+  getAxios(): AxiosInstance {
+    return this.axiosInstance
+  }
+
+  configAxios(config: CreateAxiosOptions) {
+    if (!this.axiosInstance) return
+
+    this.createAxios(config)
+  }
+
+  setHeader(headers: any): void {
+    if (!this.axiosInstance) return
+
+    Object.assign(this.axiosInstance.defaults.headers, headers)
+  }
+
+  /**
+   * 拦截器配置
+   */
+  private setupInterceptors() {
+    const {
+      axiosInstance,
+      options: { transform },
+    } = this
+    if (!transform) return
+
+    const {
+      requestInterceptors,
+      requestInterceptorsCatch,
+      responseInterceptors,
+      responseInterceptorsCatch,
+    } = transform
+
+    const axiosCanceler = new AxiosCanceler()
+
     this.axiosInstance.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        if (this.enableCancelDuplicate) {
-          const requestKey = `${config.method}-${config.url}`
-          if (this.abortControllers.has(requestKey)) {
-            // 如果存在重复请求，则取消前一个请求
-            const abortController = this.abortControllers.get(requestKey)
-            abortController?.abort()
-          }
-          const abortController = new AbortController()
-          config.signal = abortController.signal
-          this.abortControllers.set(requestKey, abortController)
-        }
+        const { requestOptions } = this.options
+        const ignoreCancelToken = requestOptions?.ignoreCancelToken ?? true
+        !ignoreCancelToken && axiosCanceler.add(config)
+
+        if (requestInterceptors && isFunction(requestInterceptors))
+          config = requestInterceptors(config, this.options)
         return config
       },
-      (error) => {
-        return Promise.reject(error)
-      }
+      undefined
     )
 
-    this.axiosInstance.interceptors.response.use(
-      (response) => {
-        if (this.enableCancelDuplicate) {
-          const requestKey = `${response.config.method}-${response.config.url}`
-          this.abortControllers.delete(requestKey)
+    requestInterceptorsCatch &&
+      isFunction(requestInterceptorsCatch) &&
+      this.axiosInstance.interceptors.request.use(
+        undefined,
+        requestInterceptorsCatch
+      )
+
+    this.axiosInstance.interceptors.response.use((res: AxiosResponse<any>) => {
+      res && axiosCanceler.remove(res.config)
+      if (responseInterceptors && isFunction(responseInterceptors))
+        res = responseInterceptors(res)
+
+      return res
+    }, undefined)
+    responseInterceptorsCatch &&
+      isFunction(responseInterceptorsCatch) &&
+      this.axiosInstance.interceptors.response.use(undefined, (error) => {
+        return responseInterceptorsCatch(axiosInstance, error)
+      })
+  }
+
+  uploadFile<T = any>(config: AxiosRequestConfig, params: UploadFileParams) {
+    const formData = new FormData()
+    const customFileName = params.name || 'file'
+
+    if (params.filename)
+      formData.append(customFileName, params.file, params.filename)
+    else formData.append(customFileName, params.file)
+
+    if (params.data) {
+      Object.keys(params.data).forEach((key) => {
+        const value = params.data![key]
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            formData.append(`${key}[]`, item)
+          })
+          return
         }
-        return response
+
+        formData.append(key, params.data![key])
+      })
+    }
+
+    return this.axiosInstance.request<T>({
+      ...config,
+      method: 'POST',
+      data: formData,
+      headers: {
+        'Content-type': ContentTypeEnum.FORM_DATA,
+        ignoreCancelToken: true,
       },
-      (error) => {
-        if (this.enableCancelDuplicate) {
-          const requestKey = `${error.config.method}-${error.config.url}`
-          this.abortControllers.delete(requestKey)
-        }
-        return Promise.reject(error)
-      }
-    )
-  }
-
-  // 添加请求过滤器
-  addRequestFilter(
-    filter: (config: InternalAxiosRequestConfig) => InternalAxiosRequestConfig
-  ) {
-    this.requestFilters.push(filter)
-  }
-
-  // 添加响应过滤器
-  addResponseFilter(filter: (response: AxiosResponse) => AxiosResponse) {
-    this.responseFilters.push(filter)
-  }
-
-  // 应用请求过滤器
-  private applyRequestFilters(
-    config: InternalAxiosRequestConfig
-  ): InternalAxiosRequestConfig {
-    let modifiedConfig = config
-    for (const filter of this.requestFilters)
-      modifiedConfig = filter(modifiedConfig)
-
-    return modifiedConfig
-  }
-
-  // 应用响应过滤器
-  private applyResponseFilters(response: AxiosResponse): AxiosResponse {
-    let modifiedResponse = response
-    for (const filter of this.responseFilters)
-      modifiedResponse = filter(modifiedResponse)
-    return modifiedResponse
-  }
-
-  // 发送通用请求
-  async request<R>(
-    config: InternalAxiosRequestConfig
-  ): Promise<AxiosResponse<R>> {
-    // 合并默认配置和传入的配置
-    const modifiedConfig: InternalAxiosRequestConfig = {
-      ...(config || {}),
-      headers: {
-        ...(config?.headers || {}),
-      } as AxiosRequestHeaders, // 添加类型注释
-    }
-
-    // 应用请求过滤器
-    const finalConfig = this.applyRequestFilters(modifiedConfig)
-
-    // 发送请求并处理响应
-    return this.sendRequestWithRetry<R>(() =>
-      this.axiosInstance.request<R>(finalConfig)
-    ).then((response) => this.applyResponseFilters(response))
-  }
-
-  // 发送 GET 请求
-  async get<R>(
-    url: string,
-    config?: InternalAxiosRequestConfig
-  ): Promise<AxiosResponse<R>> {
-    // 合并默认配置和传入的配置
-    const modifiedConfig: InternalAxiosRequestConfig = {
-      ...(config || {}), // 将 config 转换为对象，以防它为 undefined
-      headers: {
-        ...(config?.headers || {}),
-      } as AxiosRequestHeaders, // 添加类型注释
-    }
-
-    // 应用请求过滤器
-    const finalConfig = this.applyRequestFilters(modifiedConfig)
-    // 发送请求并处理响应
-    return this.sendRequestWithRetry<R>(() =>
-      this.axiosInstance.get<R>(url, finalConfig)
-    ).then((response) => this.applyResponseFilters(response))
-  }
-
-  // 发送 POST 请求
-  async post<R>(
-    url: string,
-    data?: any,
-    config?: InternalAxiosRequestConfig
-  ): Promise<AxiosResponse<R>> {
-    // 合并默认配置和传入的配置
-    const modifiedConfig: InternalAxiosRequestConfig = {
-      ...(config || {}),
-      headers: {
-        ...(config?.headers || {}),
-      } as AxiosRequestHeaders, // 添加类型注释
-    }
-
-    // 应用请求过滤器
-    const finalConfig = this.applyRequestFilters(modifiedConfig)
-
-    // 发送请求并处理响应
-    return this.sendRequestWithRetry<R>(() =>
-      this.axiosInstance.post<R>(url, data, finalConfig)
-    ).then((response) => this.applyResponseFilters(response))
-  }
-
-  // 发送 PUT 请求
-  async put<R>(
-    url: string,
-    data?: any,
-    config?: InternalAxiosRequestConfig
-  ): Promise<AxiosResponse<R>> {
-    // 合并默认配置和传入的配置
-    const modifiedConfig: InternalAxiosRequestConfig = {
-      ...(config || {}),
-      headers: {
-        ...(config?.headers || {}),
-      } as AxiosRequestHeaders, // 添加类型注释
-    }
-
-    // 应用请求过滤器
-    const finalConfig = this.applyRequestFilters(modifiedConfig)
-
-    // 发送请求并处理响应
-    return this.sendRequestWithRetry<R>(() =>
-      this.axiosInstance.put<R>(url, data, finalConfig)
-    ).then((response) => this.applyResponseFilters(response))
-  }
-
-  // 发送 DELETE 请求
-  async delete<R>(
-    url: string,
-    config?: InternalAxiosRequestConfig
-  ): Promise<AxiosResponse<R>> {
-    // 合并默认配置和传入的配置
-    const modifiedConfig: InternalAxiosRequestConfig = {
-      ...(config || {}),
-      headers: {
-        ...(config?.headers || {}),
-      } as AxiosRequestHeaders, // 添加类型注释
-    }
-
-    // 应用请求过滤器
-    const finalConfig = this.applyRequestFilters(modifiedConfig)
-
-    // 发送请求并处理响应
-    return this.sendRequestWithRetry<R>(() =>
-      this.axiosInstance.delete<R>(url, finalConfig)
-    ).then((response) => this.applyResponseFilters(response))
-  }
-
-  // 发送请求并支持重试
-  private sendRequestWithRetry<R>(
-    requestFunction: () => Promise<AxiosResponse<R>>,
-    retryCount = 0
-  ): Promise<AxiosResponse<R>> {
-    return requestFunction().catch(async (error) => {
-      if (this.enableRetry && retryCount < this.maxRetryAttempts) {
-        // 等待一段时间后重试
-        await new Promise((resolve) => setTimeout(resolve, this.retryInterval))
-        return this.sendRequestWithRetry(requestFunction, retryCount + 1)
-      } else {
-        // 重试达到最大次数或禁用重试时，返回错误
-        return Promise.reject(error)
-      }
     })
   }
 
-  // 取消所有请求
-  cancelRequest(): void {
-    for (const [, controller] of this.abortControllers) controller.abort()
+  supportFormData(config: AxiosRequestConfig) {
+    const headers = config.headers || this.options.headers
+    const contentType = headers?.['Content-Type'] || headers?.['content-type']
 
-    this.abortControllers.clear()
+    if (
+      contentType !== ContentTypeEnum.FORM_URLENCODED ||
+      !Reflect.has(config, 'data') ||
+      config.method?.toUpperCase() === RequestEnum.GET
+    )
+      return config
+
+    return {
+      ...config,
+      data: qs.stringify(config.data, { arrayFormat: 'brackets' }),
+    }
+  }
+
+  get<T = any>(
+    config: AxiosRequestConfig,
+    options?: RequestOptions
+  ): Promise<T> {
+    return this.request({ ...config, method: 'GET' }, options)
+  }
+
+  post<T = any>(
+    config: AxiosRequestConfig,
+    options?: RequestOptions
+  ): Promise<T> {
+    return this.request({ ...config, method: 'POST' }, options)
+  }
+
+  put<T = any>(
+    config: AxiosRequestConfig,
+    options?: RequestOptions
+  ): Promise<T> {
+    return this.request({ ...config, method: 'PUT' }, options)
+  }
+
+  delete<T = any>(
+    config: AxiosRequestConfig,
+    options?: RequestOptions
+  ): Promise<T> {
+    return this.request({ ...config, method: 'DELETE' }, options)
+  }
+
+  request<T = any>(
+    config: AxiosRequestConfig,
+    options?: RequestOptions
+  ): Promise<T> {
+    let conf: CreateAxiosOptions = cloneDeep(config)
+
+    if (config.cancelToken) conf.cancelToken = config.cancelToken
+
+    const transform = this.getTransform()
+
+    const { requestOptions } = this.options
+
+    const opt: RequestOptions = Object.assign({}, requestOptions, options)
+
+    const { beforeRequestHook, requestCatchHook, transformResponseHook } =
+      transform || {}
+    if (beforeRequestHook && isFunction(beforeRequestHook))
+      conf = beforeRequestHook(conf, opt)
+
+    conf.requestOptions = opt
+
+    conf = this.supportFormData(conf)
+
+    return new Promise((resolve, reject) => {
+      this.axiosInstance
+        .request<any, AxiosResponse<Result>>(conf)
+        .then((res: AxiosResponse<Result>) => {
+          if (transformResponseHook && isFunction(transformResponseHook)) {
+            try {
+              const ret = transformResponseHook(res, opt)
+              resolve(ret)
+            } catch (err) {
+              reject(err || new Error('request error!'))
+            }
+            return
+          }
+          resolve(res as unknown as Promise<T>)
+        })
+        .catch((e: Error | AxiosError) => {
+          if (requestCatchHook && isFunction(requestCatchHook)) {
+            reject(requestCatchHook(e, opt))
+            return
+          }
+          if (axios.isAxiosError(e)) {
+            /// todo: 重写Axios错误提示
+          }
+          reject(e)
+        })
+    })
   }
 }
-
-export default MyAxios

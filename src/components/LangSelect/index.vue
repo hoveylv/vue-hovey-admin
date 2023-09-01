@@ -1,30 +1,36 @@
 <script setup lang="ts">
-import { useAppStore } from '@/store/modules/app'
 import type { LocaleType } from '@/types/config'
-import { changeLocale } from '@/locales'
+import { useLocale } from '@/locales/useLocale'
 
-const appStore = useAppStore()
+const { changeLocale, language } = useLocale()
+
 async function handleLanguageChange(lang: LocaleType) {
   await changeLocale(lang)
+  // console.log('output->language', language)
+  // console.log('output->i18n', i18n.global.locale)
+  // console.log(
+  //   'output->getLocaleMessage',
+  //   i18n.global.getLocaleMessage(i18n.global.locale as string)
+  // )
 }
 </script>
 
 <template>
   <el-dropdown
     trigger="click"
-    class="cursor-pointer"
+    class="cursor-pointer p2"
     @command="handleLanguageChange"
   >
-    <div><svg-icon icon-class="language"></svg-icon></div>
+    <div><svg-icon icon-class="language" class="text-4"></svg-icon></div>
     <template #dropdown>
       <el-dropdown-menu>
-        <el-dropdown-item
-          :disabled="appStore.language === 'zh_CN'"
-          command="zh_CN"
-          >中文</el-dropdown-item
+        <el-dropdown-item :disabled="language === 'zh_CN'" command="zh_CN"
+          ><div class="i-openmoji:flag-china text-2xl mr-2"></div>
+          {{ $t('sys.locales.chinese') }}</el-dropdown-item
         >
-        <el-dropdown-item :disabled="appStore.language === 'en'" command="en"
-          >English</el-dropdown-item
+        <el-dropdown-item :disabled="language === 'en'" command="en"
+          ><div class="i-openmoji:flag-england text-2xl mr-2"></div>
+          {{ $t('sys.locales.english') }}</el-dropdown-item
         >
       </el-dropdown-menu>
     </template>

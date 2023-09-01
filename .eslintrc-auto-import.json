@@ -296,6 +296,8 @@
     "useLink": true,
     "useRoute": true,
     "useRouter": true,
-    "ElMessage": true
+    "ElMessage": true,
+    "ElMessageBox": true,
+    "ElNotification": true
   }
 }

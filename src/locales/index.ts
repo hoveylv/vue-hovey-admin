@@ -1,57 +1,39 @@
-import type { App } from 'vue'
-import type { Locale } from 'vue-i18n'
+import type { I18nOptions } from 'vue-i18n'
 import { createI18n } from 'vue-i18n'
-import type { LocaleType } from '@/types/config'
-import { useLocaleStoreWithOut } from '@/store/modules/app'
+import type { App } from 'vue'
+import { setHtmlPageLang, setLoadLocalePool } from './helper'
+import { useAppStoreWithOut } from '@/store/modules/app'
 
-const appStore = useLocaleStoreWithOut()
+// eslint-disable-next-line import/no-mutable-exports
+export let i18n: ReturnType<typeof createI18n>
 
-const localesMap = Object.fromEntries(
-  Object.entries(import.meta.glob('@/locales/langs/*.yml')).map(
-    ([path, loadLocale]) => {
-      return [path.match(/([\w-]*)\.yml$/)?.[1], loadLocale]
-    }
-  )
-) as Record<Locale, () => Promise<{ default: Record<string, string> }>>
+async function createI18nOptions(): Promise<I18nOptions> {
+  const appStore = useAppStoreWithOut()
+  const locale = appStore.appSetting.language
+  const defaultLocale = await import(`./lang/${locale}.ts`)
+  const message = defaultLocale.default?.message ?? {}
 
-export const availableLocales = Object.keys(localesMap)
+  setHtmlPageLang(locale)
+  setLoadLocalePool((loadLocalePool) => {
+    loadLocalePool.push(locale)
+  })
 
-const i18n = createI18n({
-  legacy: false,
-  locale: '',
-  messages: {},
-  availableLocales,
-  globalInjection: true,
-})
-
-const loadedLanguages: string[] = []
-
-function setI18nLanguage(lang: Locale) {
-  i18n.global.locale.value = lang
-  if (typeof document !== 'undefined')
-    document.querySelector('html')?.setAttribute('lang', lang)
-  return lang
-}
-
-export async function loadLanguageAsync(lang: string): Promise<Locale> {
-  if (i18n.global.locale.value === lang) return setI18nLanguage(lang)
-
-  if (loadedLanguages.includes(lang)) return setI18nLanguage(lang)
-  const messages = await localesMap[lang]()
-  i18n.global.setLocaleMessage(lang, messages.default)
-  loadedLanguages.push(lang)
-  return setI18nLanguage(lang)
-}
-
-export async function changeLocale(locale: LocaleType) {
-  appStore.changeLanguage(locale)
-  await loadLanguageAsync(locale)
-  if (locale === 'en') ElMessage.success('Switch Language Successful!')
-  else ElMessage.success('切换语言成功！')
+  return {
+    legacy: false,
+    locale,
+    messages: {
+      [locale]: message,
+    },
+    sync: true,
+    silentTranslationWarn: true,
+    missingWarn: false,
+    silentFallbackWarn: true,
+    globalInjection: true,
+  }
 }
 
 export async function setupI18n(app: App<Element>) {
+  const options = await createI18nOptions()
+  i18n = createI18n(options)
   app.use(i18n)
-
-  await loadLanguageAsync(appStore.language)
 }

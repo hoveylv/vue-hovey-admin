@@ -8,12 +8,12 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import UnoCSS from 'unocss/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-import Icons from 'unplugin-icons/vite'
-import IconsResolver from 'unplugin-icons/resolver'
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
 import viteCompression from 'vite-plugin-compression'
 import { visualizer } from 'rollup-plugin-visualizer'
-import VueI18n from '@intlify/unplugin-vue-i18n/vite'
+import { viteMockServe } from 'vite-plugin-mock'
+import Icons from 'unplugin-icons/vite'
+import IconsResolver from 'unplugin-icons/resolver'
 
 export default ({ mode }: ConfigEnv): UserConfig => {
   const env = loadEnv(mode, process.cwd())
@@ -37,25 +37,31 @@ export default ({ mode }: ConfigEnv): UserConfig => {
     },
     server: {
       host: '0.0.0.0',
-      port: Number(env.VITE_APP_PORT),
       open: true,
-      proxy: {
-        [env.VITE_APP_BASE_API]: {
-          target: env.VITE_APP_TARGET_URL,
-          changeOrigin: true,
-          rewrite: (path) =>
-            path.replace(
-              new RegExp(`^${env.VITE_APP_BASE_API}`),
-              env.VITE_APP_TARGET_BASE_API
-            ),
-        },
-      },
+      // proxy: {
+      //   '/basic-api': {
+      //     changeOrigin: true,
+      //     ws: true,
+      //     rewrite: (path) => path.replace(/^\/basic-api/, ''),
+      //   },
+      //   '/upload': {
+      //     target: 'http://localhost:3002/upload',
+      //     changeOrigin: true,
+      //     ws: true,
+      //     rewrite: (path) => path.replace(/^\/upload/, ''),
+      //   },
+      // },
     },
     plugins: [
       vue(),
-      UnoCSS({}),
+      UnoCSS(),
+      viteMockServe({
+        ignore: /^_/,
+        mockPath: 'mock',
+        localEnabled: env.VITE_USE_MOCK as unknown as boolean,
+      }),
       AutoImport({
-        imports: ['vue', 'vue-router', 'vue-i18n', '@vueuse/core', 'pinia'],
+        imports: ['vue', 'vue-router', '@vueuse/core', 'pinia', 'vue-i18n'],
         eslintrc: {
           enabled: true,
           filepath: './.eslintrc-auto-import.json',
@@ -95,12 +101,6 @@ export default ({ mode }: ConfigEnv): UserConfig => {
         open: false,
         gzipSize: true,
         brotliSize: true,
-      }),
-      VueI18n({
-        runtimeOnly: true,
-        compositionOnly: true,
-        fullInstall: false,
-        include: [resolve(__dirname, 'src/locales/langs/**')],
       }),
     ],
     // optimizeDeps: {
