@@ -27,4 +27,36 @@ export default {
     errMsg504: '网络超时!',
     errMsg505: 'http版本不支持该请求!',
   },
+  login: {
+    accountRule: '请输入账号',
+    passwordRule: '请输入密码',
+    passwordRuleReg: '密码格式应为8-18位数字、字母、符号的任意两种组合',
+    verifyCodeReg: '请输入验证码',
+    verifyCodeCorrectReg: '请输入正确的验证码',
+    verifyCodeSixReg: '请输入6位数字验证码',
+
+    loginButton: '登录',
+    registerButton: '注册',
+    rememberMe: '记住我',
+    forgetPassword: '忘记密码?',
+    otherSignIn: '其他登录方式',
+
+    // placeholder
+    accountPlaceholder: '请输入账号',
+    passwordPlaceholder: '请输入密码',
+    verifyCodePlaceholder: '请输入验证码',
+    smsPlaceholder: '请输入验证码',
+    mobilePlaceholder: '请输入手机号码',
+    policyPlaceholder: '勾选后才能注册',
+    diffPwd: '两次输入密码不一致',
+
+    thirdLogin: '第三方登录',
+    phoneLogin: '手机登录',
+    qRCodeLogin: '二维码登录',
+    register: '注册',
+    weChatLogin: '微信登录',
+    alipayLogin: '支付宝登录',
+    qqLogin: 'QQ登录',
+    weiboLogin: '微博登录',
+  },
 }

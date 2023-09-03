@@ -9,11 +9,13 @@ const routeModuleList: AppRouteModule[] = []
 
 // 加入到路由集合中
 Object.keys(modules).forEach((key) => {
+  // 将modules中的key值转换为对象
   const mod = (modules as Recordable)[key].default || {}
+  // 将mod转换为数组
   const modList = Array.isArray(mod) ? [...mod] : [mod]
+  // 将modList添加到routeModuleList中
   routeModuleList.push(...modList)
 })
-
 export const asyncRoutes = [PAGE_NOT_FOUND_ROUTE, ...routeModuleList]
 
 // 跟路由

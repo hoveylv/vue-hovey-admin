@@ -21,7 +21,12 @@ async function handleLanguageChange(lang: LocaleType) {
     class="cursor-pointer p2"
     @command="handleLanguageChange"
   >
-    <div><svg-icon icon-class="language" class="text-4"></svg-icon></div>
+    <div>
+      <svg-icon
+        icon-class="language"
+        class="hover:text-primary text-4"
+      ></svg-icon>
+    </div>
     <template #dropdown>
       <el-dropdown-menu>
         <el-dropdown-item :disabled="language === 'zh_CN'" command="zh_CN"

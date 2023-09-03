@@ -31,4 +31,37 @@ export default {
     errMsg504: 'Network timeout!',
     errMsg505: 'The http version does not support the request!',
   },
+  login: {
+    accountRule: 'Please input account',
+    passwordRule: 'Please input password',
+    passwordRuleReg:
+      'The password format should be any combination of 8-18 digits',
+    verifyCodeReg: 'Please enter verify code',
+    verifyCodeCorrectReg: 'Please enter correct verify code',
+    verifyCodeSixReg: 'Please enter a 6-digit verify code',
+
+    loginButton: 'Sign in',
+    registerButton: 'Sign up',
+    rememberMe: 'Remember me',
+    forgetPassword: 'Forget Password?',
+    otherSignIn: 'Sign in with',
+
+    // placeholder
+    accountPlaceholder: 'Please input username',
+    passwordPlaceholder: 'Please input password',
+    verifyCodePlaceholder: 'Please input verifyCode',
+    smsPlaceholder: 'Please input sms code',
+    mobilePlaceholder: 'Please input mobile',
+    policyPlaceholder: 'Register after checking',
+    diffPwd: 'The two passwords are inconsistent',
+
+    thirdLogin: 'Third Login',
+    phoneLogin: 'Phone Login',
+    qRCodeLogin: 'QRCode Login',
+    register: 'Register',
+    weChatLogin: 'WeChat Login',
+    alipayLogin: 'Alipay Login',
+    qqLogin: 'QQ Login',
+    weiboLogin: 'Weibo Login',
+  },
 }

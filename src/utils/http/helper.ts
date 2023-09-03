@@ -5,6 +5,7 @@ import type { ErrorMessageMode } from '@/types/axios'
 
 const DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'
 
+// 格式化一个包含日期时间字符串的对象
 export function joinTimestamp<T extends boolean>(
   join: boolean,
   restful: T

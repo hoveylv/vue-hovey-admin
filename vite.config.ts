@@ -14,6 +14,7 @@ import { visualizer } from 'rollup-plugin-visualizer'
 import { viteMockServe } from 'vite-plugin-mock'
 import Icons from 'unplugin-icons/vite'
 import IconsResolver from 'unplugin-icons/resolver'
+import svgLoader from 'vite-svg-loader'
 
 export default ({ mode }: ConfigEnv): UserConfig => {
   const env = loadEnv(mode, process.cwd())
@@ -30,7 +31,6 @@ export default ({ mode }: ConfigEnv): UserConfig => {
           javascriptEnabled: true,
           additionalData: `
             @use "@/styles/element/index.scss" as *;
-            @use "@/styles/var.scss" as *;
           `,
         },
       },
@@ -55,6 +55,7 @@ export default ({ mode }: ConfigEnv): UserConfig => {
     plugins: [
       vue(),
       UnoCSS(),
+      svgLoader(),
       viteMockServe({
         ignore: /^_/,
         mockPath: 'mock',
@@ -85,7 +86,10 @@ export default ({ mode }: ConfigEnv): UserConfig => {
         autoInstall: true,
       }),
       createSvgIconsPlugin({
-        iconDirs: [resolve(process.cwd(), 'src/assets/icons')],
+        iconDirs: [
+          resolve(process.cwd(), 'src/assets/icons'),
+          resolve(process.cwd(), 'src/assets/svg'),
+        ],
         symbolId: 'icon-[dir]-[name]',
       }),
       viteCompression({
